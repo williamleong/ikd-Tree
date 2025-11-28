@@ -209,6 +209,7 @@ private:
     void Add_by_range(KD_TREE_NODE ** root, BoxPointType boxpoint, bool allow_rebuild);
     void Search(KD_TREE_NODE * root, int k_nearest, PointType point, MANUAL_HEAP &q, double max_dist);//priority_queue<PointType_CMP>
     void Search_by_range(KD_TREE_NODE *root, BoxPointType boxpoint, PointVector &Storage);
+    bool Point_in_radius(KD_TREE_NODE *root, PointType point, float radius); //true if object found, false otherwise
     void Search_by_radius(KD_TREE_NODE *root, PointType point, float radius, PointVector &Storage);
     bool Criterion_Check(KD_TREE_NODE * root);
     void Push_Down(KD_TREE_NODE * root);
@@ -236,6 +237,7 @@ public:
     void Nearest_Search(PointType point, int k_nearest, PointVector &Nearest_Points, vector<float> & Point_Distance, double max_dist = INFINITY);
     void Box_Search(const BoxPointType &Box_of_Point, PointVector &Storage);
     void Radius_Search(PointType point, const float radius, PointVector &Storage);
+    bool Point_in_radius(PointType point, const float radius); //return true if there is at least one point within the radius
     int Add_Points(PointVector & PointToAdd, bool downsample_on);
     void Add_Point_Boxes(vector<BoxPointType> & BoxPoints);
     void Delete_Points(PointVector & PointToDel);

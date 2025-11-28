@@ -411,6 +411,12 @@ void KD_TREE<PointType>::Radius_Search(PointType point, const float radius, Poin
 }
 
 template <typename PointType>
+bool KD_TREE<PointType>::Point_in_radius(PointType point, const float radius)
+{
+    return Point_in_radius(Root_Node, point, radius);
+}
+
+template <typename PointType>
 int KD_TREE<PointType>::Add_Points(PointVector & PointToAdd, bool downsample_on){
     int NewPointSize = PointToAdd.size();
     int tree_size = size();
@@ -1041,6 +1047,65 @@ void KD_TREE<PointType>::Search_by_range(KD_TREE_NODE *root, BoxPointType boxpoi
         pthread_mutex_unlock(&search_flag_mutex);
     }
     return;    
+}
+
+template <typename PointType>
+bool KD_TREE<PointType>::Point_in_radius(KD_TREE_NODE *root, PointType point, float radius)
+{
+    if (root == nullptr)
+        return false;
+    Push_Down(root);
+    PointType range_center;
+    range_center.x = (root->node_range_x[0] + root->node_range_x[1]) * 0.5;
+    range_center.y = (root->node_range_y[0] + root->node_range_y[1]) * 0.5;
+    range_center.z = (root->node_range_z[0] + root->node_range_z[1]) * 0.5;
+    float dist = sqrt(calc_dist(range_center, point));
+
+    if (dist > radius + sqrt(root->radius_sq))
+        return false;
+
+    if (dist <= radius - sqrt(root->radius_sq)) 
+    {
+        PointVector Storage;
+        flatten(root, Storage, NOT_RECORD);
+        return !Storage.empty();
+    }
+
+    if (!root->point_deleted && calc_dist(root->point, point) <= radius * radius){
+        return true;
+    }
+
+    if ((Rebuild_Ptr == nullptr) || root->left_son_ptr != *Rebuild_Ptr)
+    {
+        if (Point_in_radius(root->left_son_ptr, point, radius))
+            return true;
+    }
+    else
+    {
+        pthread_mutex_lock(&search_flag_mutex);
+        const auto point_found = Point_in_radius(root->left_son_ptr, point, radius);
+        pthread_mutex_unlock(&search_flag_mutex);
+
+        if (point_found)
+            return true;
+    }
+
+    if ((Rebuild_Ptr == nullptr) || root->right_son_ptr != *Rebuild_Ptr)
+    {
+        if (Point_in_radius(root->right_son_ptr, point, radius))
+            return true;
+    }
+    else
+    {
+        pthread_mutex_lock(&search_flag_mutex);
+        const auto point_found = Point_in_radius(root->right_son_ptr, point, radius);
+        pthread_mutex_unlock(&search_flag_mutex);
+
+        if (point_found)
+            return true;
+    }
+
+    return false;
 }
 
 template <typename PointType>
